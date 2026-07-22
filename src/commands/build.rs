@@ -1,11 +1,11 @@
 //! Build a Dolfin package into Turtle format.
 
 use crate::CliError;
+use irukame::{TurtleGenerator, TurtleOptions};
 use rowl::package;
 use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
-use irukame::{TurtleGenerator, TurtleOptions};
 
 pub fn run(
     path: PathBuf,
@@ -31,7 +31,7 @@ pub fn run(
         include_rules_as_comments: true,
     };
 
-    let generator = TurtleGenerator::new(options);
+    let mut generator = TurtleGenerator::new(options);
 
     // Generate Turtle output
     let turtle = generator.generate(&package)?;

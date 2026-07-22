@@ -58,8 +58,8 @@ pub enum Command {
         output: Option<PathBuf>,
 
         /// Base IRI for the ontology
-        #[arg(long, default_value = "http://example.org/")]
-        base_iri: String,
+        #[arg(long)]
+        base_iri: Option<String>,
 
         /// Exclude comments from output
         #[arg(long)]
@@ -117,7 +117,12 @@ pub fn run(cli: Cli) -> Result<(), CliError> {
             output,
             base_iri,
             no_comments,
-        } => commands::build::run(path, output, base_iri, no_comments),
+        } => commands::build::run(
+            path,
+            output,
+            base_iri.unwrap_or("".to_string()),
+            no_comments,
+        ),
 
         Command::Parse { path, tokens, json } => commands::parse::run(path, tokens, json),
     }

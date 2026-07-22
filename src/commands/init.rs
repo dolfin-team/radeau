@@ -36,7 +36,10 @@ pub fn run(
 
     if let Some(authors) = authors {
         for author in authors {
-            content.push_str(&format!("  author \"{}\"\n", escape_string(author.as_str())));
+            content.push_str(&format!(
+                "  author \"{}\"\n",
+                escape_string(author.as_str())
+            ));
         }
     }
 
