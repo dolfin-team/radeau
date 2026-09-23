@@ -7,7 +7,8 @@ use std::fs;
 use std::path::PathBuf;
 
 pub fn run(path: PathBuf, tokens: bool, _json: bool) -> Result<(), CliError> {
-    let source = fs::read_to_string(&path)?;
+    let path_for_err = path.clone();
+    let source = fs::read_to_string(&path).map_err(move |e| CliError::Io(path_for_err, e))?;
 
     if tokens {
         // Show tokens
@@ -43,7 +44,8 @@ pub fn run(path: PathBuf, tokens: bool, _json: bool) -> Result<(), CliError> {
         } else {
             println!("Ontology file: {}", path.display());
             println!("{:-<60}", "");
-            let onto = parser::parse_ontology(&source).map_err(|e| CliError::Parse(e))?;
+            let onto = parser::parse_ontology(&source)
+                .map_err(|err: rowl::ParseError| CliError::Parse(Box::new(err)))?;
             format!("{:#?}", onto)
         };
 

@@ -1,6 +1,6 @@
-//! Build a Dolfin package into Turtle format.
+//! Build a Dolfin package into a target format.
 
-use crate::CliError;
+use crate::{CliError, EmitFormat};
 use irukame::{TurtleGenerator, TurtleOptions};
 use rowl::package;
 use std::fs;
@@ -12,6 +12,8 @@ pub fn run(
     output: Option<PathBuf>,
     base_iri: String,
     no_comments: bool,
+    no_rules: bool,
+    emit: EmitFormat,
 ) -> Result<(), CliError> {
     eprintln!("Loading package from {}...", path.display());
 
@@ -24,26 +26,35 @@ pub fn run(
         package.ontologies.len()
     );
 
-    // Configure the generator
-    let options = TurtleOptions {
-        base_iri,
-        include_comments: !no_comments,
-        include_rules_as_comments: true,
+    let content = match emit {
+        EmitFormat::Turtle => {
+            // Configure the generator
+            let options = TurtleOptions {
+                base_iri,
+                include_comments: !no_comments,
+                include_rules_as_comments: no_rules,
+                include_queries_as_comments: true,
+            };
+
+            // Generate Turtle output
+            TurtleGenerator::new(options).generate(&package)?
+        }
+        EmitFormat::N3Rules => {
+            irukame::rules_as_n3(&package)?
+        }
     };
-
-    let mut generator = TurtleGenerator::new(options);
-
-    // Generate Turtle output
-    let turtle = generator.generate(&package)?;
 
     // Write output
     match output {
         Some(output_path) => {
-            fs::write(&output_path, &turtle)?;
+            fs::write(&output_path, &content)
+                .map_err(|e| CliError::Io(output_path.clone(), e))?;
             eprintln!("✓ Written to {}", output_path.display());
         }
         None => {
-            io::stdout().write_all(turtle.as_bytes())?;
+            io::stdout()
+                .write_all(content.as_bytes())
+                .map_err(|e| CliError::Io(PathBuf::new(), e))?;
         }
     }
 
