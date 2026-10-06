@@ -1,6 +1,6 @@
 //! Emit package metadata as JSON — the `cargo metadata` equivalent.
 //!
-//! Plugins should prefer `$RAFT metadata` over re-implementing package
+//! Plugins should prefer `$RADEAU metadata` over re-implementing package
 //! loading (package.dlf resolution, namespace layout, etc.) themselves.
 
 use crate::error::CliError;

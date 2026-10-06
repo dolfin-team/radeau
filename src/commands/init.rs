@@ -5,11 +5,10 @@ use std::fs;
 use std::path::PathBuf;
 
 pub fn run(
-    name: Option<String>,
+    name: String,
     path: PathBuf,
     description: Option<String>,
     authors: Option<Vec<String>>,
-    with_turtle: Vec<PathBuf>,
 ) -> Result<(), CliError> {
     // Create directory if it doesn't exist
     if !path.exists() {
@@ -26,15 +25,6 @@ pub fn run(
             manifest_path.display()
         )));
     }
-
-    // Turtle-seeded init: reverse the RDF into Dolfin with mekarui.
-    if !with_turtle.is_empty() {
-        return run_from_turtle(&path, &with_turtle);
-    }
-
-    let name = name.ok_or_else(|| {
-        CliError::Other("--name is required (or pass --with-turtle to derive it)".to_string())
-    })?;
 
     // Generate package.dlf content
     let mut content = format!(
@@ -91,46 +81,11 @@ concept Thing:
         "  1. Edit {} to add your ontology definitions",
         sample_path.display()
     );
-    println!("  2. Run 'dolfin check {}' to validate", path.display());
+    println!("  2. Run 'radeau check {}' to validate", path.display());
     println!(
-        "  3. Run 'dolfin build {}' to generate Turtle output",
+        "  3. Run 'radeau build {}' to generate Turtle output",
         path.display()
     );
-
-    Ok(())
-}
-
-/// Seed a package by reversing one or more RDF/Turtle files into Dolfin with
-/// mekarui. The files are loaded into a single graph, so declarations may span
-/// several inputs.
-fn run_from_turtle(path: &PathBuf, turtle_files: &[PathBuf]) -> Result<(), CliError> {
-    // Concatenate the documents into one Turtle blob (oxigraph tolerates
-    // repeated @prefix declarations across the inputs).
-    let mut blob = String::new();
-    for file in turtle_files {
-        let text = fs::read_to_string(file).map_err(|e| CliError::Io(file.clone(), e))?;
-        blob.push_str(&text);
-        blob.push('\n');
-    }
-
-    let written = mekarui::turtle_to_dir(blob.as_bytes(), &mekarui::MekaruiOptions::default(), path)
-        .map_err(|e| CliError::Other(format!("mekarui: {e}")))?;
-
-    let sources: Vec<String> = turtle_files.iter().map(|p| p.display().to_string()).collect();
-    println!(
-        "Reversed {} into a Dolfin package at {}",
-        sources.join(", "),
-        path.display()
-    );
-    let mut written = written;
-    written.sort();
-    for f in &written {
-        println!("  Created {}", f.display());
-    }
-    println!();
-    println!("Next steps:");
-    println!("  1. Run 'raft check {}' to validate", path.display());
-    println!("  2. Run 'raft build {}' to regenerate Turtle", path.display());
 
     Ok(())
 }

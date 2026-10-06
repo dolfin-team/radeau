@@ -62,15 +62,15 @@ enum HasOp {
 
 /// Parse `--sub` / `--variant` arguments into operations.
 ///
-/// Each arg may be comma-separated.  Prefix `-` means remove; `-*` means remove-all.
+/// Each arg may be comma-separated.  Prefix `~` means remove; `~*` means remove-all.
 fn parse_name_ops(args: &[String]) -> Vec<NameOp> {
     args.iter()
         .flat_map(|arg| arg.split(','))
         .map(|s| {
             let s = s.trim();
-            if s == "-*" {
+            if s == "~*" {
                 NameOp::RemoveAll
-            } else if let Some(name) = s.strip_prefix('-') {
+            } else if let Some(name) = s.strip_prefix('~') {
                 NameOp::Remove(name.to_string())
             } else {
                 NameOp::Add(s.to_string())
@@ -81,7 +81,7 @@ fn parse_name_ops(args: &[String]) -> Vec<NameOp> {
 
 /// Parse `--has` arguments into operations.
 ///
-/// Each arg may be comma-separated.  Prefix `-` followed by just the property
+/// Each arg may be comma-separated.  Prefix `~` followed by just the property
 /// name means remove.  Otherwise the format is `name:type` or `name:card:type`.
 fn parse_has_ops(args: &[String]) -> Result<Vec<HasOp>, CliError> {
     args.iter()
@@ -129,6 +129,7 @@ fn typeref_span(tr: &TypeRef) -> Option<Span> {
     match tr {
         TypeRef::Named { span, .. } => *span,
         TypeRef::Primitive { span, .. } => *span,
+        TypeRef::Union { span, .. } => *span,
     }
 }
 
@@ -589,7 +590,7 @@ mod tests {
 
     #[test]
     fn test_parse_name_ops_remove() {
-        let args = vec!["-Animal".to_string(), "-*".to_string()];
+        let args = vec!["~Animal".to_string(), "~*".to_string()];
         let ops = parse_name_ops(&args);
         assert!(matches!(&ops[0], NameOp::Remove(n) if n == "Animal"));
         assert!(matches!(&ops[1], NameOp::RemoveAll));

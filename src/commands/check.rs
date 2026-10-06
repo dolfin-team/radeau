@@ -3,6 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::CliError;
+use dolfin_analysis::{SymbolIndex, analyze_with_index};
 use dolfin_diagnostic::{Severity, format_diagnostic};
 use dolfin_lint::PackageKnowledge;
 use dolfin_lint::config::{CliOverrides, LintConfig};
@@ -111,6 +112,15 @@ pub fn run(
         );
     }
 
+    // Semantic analysis (dolfin-analysis: S001-S010, type checks) over a
+    // package-wide index, so cross-file references resolve. dolfin-lint does
+    // not run these; the LSP does.
+    let mut sem_index = SymbolIndex::default();
+    for (_, ontology) in package.iter_ontologies() {
+        let file_path = path.join(&ontology.relative_path);
+        sem_index.add_file(&file_path.to_string_lossy(), &ontology.ast);
+    }
+
     let mut has_errors = false;
 
     // Phase 1: collect all diagnostics and print them.
@@ -132,14 +142,17 @@ pub fn run(
         let file_str = file_path.to_string_lossy();
         let diagnostics =
             engine.check_with_knowledge(&ontology.ast, &source, &file_str, &knowledge);
+        // Reported but kept out of `--fix`: their suggestions are guesses.
+        let semantic = analyze_with_index(ontology.ast.clone(), sem_index.clone()).diagnostics;
+        let shown: Vec<&LintDiagnostic> = diagnostics.iter().chain(&semantic).collect();
 
-        if diagnostics.is_empty() {
+        if shown.is_empty() {
             if verbose {
                 println!("✓ {} - No issues", namespace.full());
             }
         } else {
-            let (errors, others): (Vec<_>, Vec<_>) = diagnostics
-                .iter()
+            let (errors, others): (Vec<_>, Vec<_>) = shown
+                .into_iter()
                 .partition(|d| d.severity == Severity::Error);
 
             if !errors.is_empty() {
@@ -176,31 +189,30 @@ pub fn run(
 
     // Phase 2: apply all fixes at once so cross-file renames are consistent.
     let mut files_with_fixes: Vec<String> = Vec::new();
-    if fix
-        && let Some(engine) = any_engine {
-            let all_sources: HashMap<String, String> = all_collected
+    if fix && let Some(engine) = any_engine {
+        let all_sources: HashMap<String, String> = all_collected
+            .iter()
+            .map(|(p, _, s, _)| (p.to_string_lossy().into_owned(), s.clone()))
+            .collect();
+
+        let all_diags: Vec<LintDiagnostic> = all_collected
+            .iter()
+            .flat_map(|(_, _, _, d)| d.iter().cloned())
+            .collect();
+
+        let patched = engine.apply_fixes_multifile(&all_sources, "", &all_diags);
+
+        for (file, new_source) in &patched {
+            let file_pb = PathBuf::from(file);
+            fs::write(&file_pb, new_source).map_err(|e| CliError::Io(file_pb.clone(), e))?;
+            if let Some((_, ns, _, _)) = all_collected
                 .iter()
-                .map(|(p, _, s, _)| (p.to_string_lossy().into_owned(), s.clone()))
-                .collect();
-
-            let all_diags: Vec<LintDiagnostic> = all_collected
-                .iter()
-                .flat_map(|(_, _, _, d)| d.iter().cloned())
-                .collect();
-
-            let patched = engine.apply_fixes_multifile(&all_sources, "", &all_diags);
-
-            for (file, new_source) in &patched {
-                let file_pb = PathBuf::from(file);
-                fs::write(&file_pb, new_source).map_err(|e| CliError::Io(file_pb.clone(), e))?;
-                if let Some((_, ns, _, _)) = all_collected
-                    .iter()
-                    .find(|(p, _, _, _)| p.to_string_lossy() == file.as_str())
-                {
-                    files_with_fixes.push(ns.clone());
-                }
+                .find(|(p, _, _, _)| p.to_string_lossy() == file.as_str())
+            {
+                files_with_fixes.push(ns.clone());
             }
         }
+    }
 
     if has_errors {
         println!("❌ Errors found");
@@ -241,5 +253,38 @@ fn list_all_rules() {
             println!("  {} [{}]", rule.id, rule.severity.as_str());
         }
         println!();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn check_package(name: &str, mass: &str) -> Result<(), CliError> {
+        let dir = std::env::temp_dir().join(format!("radeau-check-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("package.dlf"),
+            "package kitchen:\n  dolfin_version \"1\"\n  version \"1.0.0\"\n",
+        )
+        .unwrap();
+        fs::write(
+            dir.join("kitchen.dlf"),
+            format!("concept Mass\n\nconcept Bag:\n  has mass: one Mass\n\nfact flour a Bag\n  mass quantity({mass})\n"),
+        )
+        .unwrap();
+        let result = run(dir.clone(), false, false, vec![], vec![], false);
+        let _ = fs::remove_dir_all(&dir);
+        result
+    }
+
+    #[test]
+    fn dimension_mismatch_fails_check() {
+        assert!(check_package("ok", "250 g").is_ok());
+        assert!(matches!(
+            check_package("bad", "250 mL"),
+            Err(CliError::LintError)
+        ));
     }
 }

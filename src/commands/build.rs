@@ -26,29 +26,24 @@ pub fn run(
         package.ontologies.len()
     );
 
+    let mut generator = TurtleGenerator::new(TurtleOptions {
+        base_iri,
+        include_comments: !no_comments,
+        include_rules_as_comments: no_rules,
+        include_queries_as_comments: true,
+    });
     let content = match emit {
-        EmitFormat::Turtle => {
-            // Configure the generator
-            let options = TurtleOptions {
-                base_iri,
-                include_comments: !no_comments,
-                include_rules_as_comments: no_rules,
-                include_queries_as_comments: true,
-            };
-
-            // Generate Turtle output
-            TurtleGenerator::new(options).generate(&package)?
-        }
-        EmitFormat::N3Rules => {
-            irukame::rules_as_n3(&package)?
-        }
+        EmitFormat::Turtle => generator.generate(&package)?,
+        EmitFormat::N3Rules => generator.generate_n3_rules(&package)?,
     };
+    for (rule, reason) in generator.skipped_rules() {
+        eprintln!("warning: rule `{rule}` written as a comment: {reason}");
+    }
 
     // Write output
     match output {
         Some(output_path) => {
-            fs::write(&output_path, &content)
-                .map_err(|e| CliError::Io(output_path.clone(), e))?;
+            fs::write(&output_path, &content).map_err(|e| CliError::Io(output_path.clone(), e))?;
             eprintln!("✓ Written to {}", output_path.display());
         }
         None => {

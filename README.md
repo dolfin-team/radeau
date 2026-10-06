@@ -1,6 +1,6 @@
-# Raft - Dolfin Ontology CLI
+# Radeau - Dolfin Ontology CLI
 
-Raft is the command-line interface for working with Dolfin ontology files. It provides tools for linting, formatting, building, and managing Dolfin packages (`.dlf` files).
+Radeau is the command-line interface for working with Dolfin ontology files. It provides tools for linting, formatting, building, and managing Dolfin packages (`.dlf` files).
 
 ## Installation
 
@@ -8,25 +8,25 @@ Raft is the command-line interface for working with Dolfin ontology files. It pr
 
 ```bash
 cd rust
-cargo install --path raft
+cargo install --path radeau
 ```
 
 ## Shell Completions
 
-Raft can generate shell completions for bash, zsh, fish, elvish, and powershell.
+Radeau can generate shell completions for bash, zsh, fish, elvish, and powershell.
 
 ### Bash
 
 ```bash
 # System-wide installation (requires sudo)
-raft completions bash | sudo tee /etc/bash_completion.d/raft
+radeau completions bash | sudo tee /etc/bash_completion.d/radeau
 
 # User installation (recommended)
 mkdir -p ~/.local/share/bash-completion/completions
-raft completions bash > ~/.local/share/bash-completion/completions/raft
+radeau completions bash > ~/.local/share/bash-completion/completions/radeau
 
 # Source completions (add to ~/.bashrc)
-echo 'source ~/.local/share/bash-completion/completions/raft' >> ~/.bashrc
+echo 'source ~/.local/share/bash-completion/completions/radeau' >> ~/.bashrc
 
 # Reload shell or source immediately
 source ~/.bashrc
@@ -39,7 +39,7 @@ source ~/.bashrc
 mkdir -p ~/.zsh/completions
 
 # Generate completions
-raft completions zsh > ~/.zsh/completions/_raft
+radeau completions zsh > ~/.zsh/completions/_radeau
 
 # Add to ~/.zshrc (if not already present)
 echo 'fpath=(~/.zsh/completions $fpath)' >> ~/.zshrc
@@ -56,7 +56,7 @@ exec $SHELL
 mkdir -p ~/.config/fish/completions
 
 # Generate completions
-raft completions fish > ~/.config/fish/completions/raft.fish
+radeau completions fish > ~/.config/fish/completions/radeau.fish
 
 # Completions are automatically loaded - no reload needed
 ```
@@ -68,10 +68,10 @@ raft completions fish > ~/.config/fish/completions/raft.fish
 mkdir -p ~/.elvish/lib
 
 # Generate completions
-raft completions elvish > ~/.elvish/lib/raft.elv
+radeau completions elvish > ~/.elvish/lib/radeau.elv
 
 # Add to ~/.elvish/rc.elv
-echo 'use ./lib/raft' >> ~/.elvish/rc.elv
+echo 'use ./lib/radeau' >> ~/.elvish/rc.elv
 
 # Reload
 elvish
@@ -81,26 +81,27 @@ elvish
 
 ```powershell
 # Generate to profile location
-raft completions powershell > $PROFILE
+radeau completions powershell > $PROFILE
 
 # Or register in current session only
-raft completions powershell | Out-String | Invoke-Expression
+radeau completions powershell | Out-String | Invoke-Expression
 ```
 
 ## Completion Features
 
 The shell completions provide:
 
-- **Command completion**: `raft <TAB>` shows all available commands
-- **Option completion**: `raft check --<TAB>` shows all check options
-- **Rule completion**: `raft check --disable-rule <TAB>` shows all available lint rules
-- **Category completion**: `raft check --disable-category <TAB>` shows all rule categories
+- **Command completion**: `radeau <TAB>` shows all available commands
+- **Option completion**: `radeau check --<TAB>` shows all check options
+- **Rule completion**: `radeau check --disable-rule <TAB>` shows all available lint rules
+- **Category completion**: `radeau check --disable-category <TAB>` shows all rule categories
 
 ## Interactive Mode
 
-Running a command with missing required arguments (or `raft` with no subcommand)
+Running a command with missing required arguments (or `radeau` with no subcommand)
 drops into an interactive prompt that collects the missing values instead of
-failing outright.
+failing outright. Installed plugins appear in its menus (see
+[Interactive mode and plugins](#interactive-mode-and-plugins)).
 
 ## Usage Examples
 
@@ -108,80 +109,80 @@ failing outright.
 
 ```bash
 # Minimal
-raft init --name "http://example.org/my-ontology" --description "My ontology"
+radeau init --name "http://example.org/my-ontology" --description "My ontology"
 
 # With authors (repeatable)
-raft init --name "http://example.org/my-ontology" --author "Alice" --author "Bob"
+radeau init --name "http://example.org/my-ontology" --author "Alice" --author "Bob"
 
-# Seed the package from existing RDF/Turtle (reversed to Dolfin via mekarui).
-# --name is optional here; it is derived from the RDF.
-raft init --with-turtle base.ttl,extra.ttl
+# Seed the package from an existing ontology, through an importer plugin
+# (see "Init importers" below). The importer defines its own arguments.
+radeau init <format> base.ext extra.ext --path my-ontology
 ```
 
 ### Check for linting issues
 
 ```bash
 # Check all files in package
-raft check .
+radeau check .
 
 # Check with verbose output
-raft check -v .
+radeau check -v .
 
 # Disable specific rules (with tab completion!)
-raft check --disable-rule naming/concept-pascal-case .
+radeau check --disable-rule naming/concept-pascal-case .
 
 # Disable entire categories
-raft check --disable-category style --disable-category unused .
+radeau check --disable-category style --disable-category unused .
 
 # Auto-fix issues where possible
-raft check --fix .
+radeau check --fix .
 
 # List all available rules
-raft check --list-rules
+radeau check --list-rules
 ```
 
 ### Format files
 
 ```bash
 # Format all files in package
-raft fmt .
+radeau fmt .
 
 # Format single file
-raft fmt path/to/file.dlf
+radeau fmt path/to/file.dlf
 
 # Check if files need formatting (for CI)
-raft fmt --check .
+radeau fmt --check .
 
 # Verbose output
-raft fmt -v .
+radeau fmt -v .
 
 # Quiet mode (errors only)
-raft fmt -q .
+radeau fmt -q .
 
 # Point at an explicit manifest
-raft fmt --manifest-path path/to/package.dlf
+radeau fmt --manifest-path path/to/package.dlf
 ```
 
 ### Build to Turtle
 
 ```bash
 # Build package to stdout
-raft build .
+radeau build .
 
 # Build to file
-raft build --output ontology.ttl .
+radeau build --output ontology.ttl .
 
 # With custom base IRI
-raft build --base-iri http://example.org/ontology .
+radeau build --base-iri http://example.org/ontology .
 
 # Exclude comments from the Turtle output
-raft build --no-comments .
+radeau build --no-comments .
 
 # Write rules as comments instead of emitting them into the Turtle
-raft build --no-rules .
+radeau build --no-rules .
 
 # Emit only the N3 rules
-raft build --emit n3-rules .
+radeau build --emit n3-rules .
 ```
 
 `--emit` accepts `turtle` (default) or `n3-rules`.
@@ -190,23 +191,23 @@ raft build --emit n3-rules .
 
 ```bash
 # Add a concept
-raft add concept general.specific.MyConcept --sub Thing --has "name:string"
+radeau add concept general.specific.MyConcept --sub Thing --has "name:string"
 
 # Add a property
-raft add property general.specific.hasOwner --domain Person --range Person \
+radeau add property general.specific.hasOwner --domain Person --range Person \
     --domain-cardinality one --range-cardinality optional
 
 # Modify a concept: add "age:int", remove the "name" has, drop parent "Pet"
-raft modify concept general.specific.MyConcept --has age:int --has ~name --sub ~Pet
+radeau modify concept general.specific.MyConcept --has age:int --has ~name --sub ~Pet
 
 # Modify a property: change range and cardinality
-raft modify property general.specific.hasOwner --range Organization --range-cardinality any
+radeau modify property general.specific.hasOwner --range Organization --range-cardinality any
 
 # Remove a concept (dry run shows what would be removed)
-raft remove concept general.specific.MyConcept --dry-run
+radeau remove concept general.specific.MyConcept --dry-run
 
 # Remove with force (even if used elsewhere)
-raft remove property general.specific.hasOwner --force
+radeau remove property general.specific.hasOwner --force
 ```
 
 Cardinalities accept `one`, `optional`, `any`, `some`, or numeric forms
@@ -218,25 +219,25 @@ Cardinalities accept `one`, `optional`, `any`, `some`, or numeric forms
 ```bash
 # Print namespace, files, concepts, and properties as JSON.
 # Intended for plugins to consume instead of re-loading the package.
-raft metadata .
+radeau metadata .
 ```
 
 ### Parse a single file (debugging)
 
 ```bash
 # Show the AST
-raft parse path/to/file.dlf
+radeau parse path/to/file.dlf
 
 # Show tokens instead
-raft parse --tokens path/to/file.dlf
+radeau parse --tokens path/to/file.dlf
 
 # Emit JSON
-raft parse --json path/to/file.dlf
+radeau parse --json path/to/file.dlf
 ```
 
 ## Available Commands
 
-- `init` - Initialize a new Dolfin package (optionally seeded from Turtle)
+- `init` - Initialize a new Dolfin package (or import one with `radeau init <format>`, see [Init importers](#init-importers))
 - `check` - Check a package for linting errors
 - `fmt` - Format Dolfin source files
 - `build` - Build a package into Turtle or N3-rules format
@@ -249,24 +250,136 @@ raft parse --json path/to/file.dlf
 
 ## Plugins
 
-Any command raft does not know about is forwarded, cargo-style, to an external
-`raft-<command>` executable found on `PATH`. For example, `raft foo bar` runs
-`raft-foo foo bar`, and `raft help foo` runs `raft-foo foo --help`. Discovered
-plugins are listed under a `Plugins:` section in `raft --help`. Plugins can
-read the current package via `raft metadata`.
+Radeau can be extended without rebuilding it. A plugin is a separate executable
+named `radeau-<name>`; radeau finds it at runtime and forwards to it, the way
+`cargo` handles `cargo-<name>`.
+
+Some plugins are maintained alongside radeau as `radeau-*` crates in this
+workspace. Run `radeau --help` to see which ones are installed on your machine:
+they are listed under `Plugins:` and `Init importers:`.
+
+### How radeau finds a plugin
+
+Radeau looks for `radeau-<name>` first in the directory of the running `radeau`
+executable, then in each `PATH` directory. The first executable file found
+wins. Installing a plugin next to `radeau` (e.g. both with `cargo install`) is
+enough.
+
+A plugin can never replace a built-in command: `radeau-check` would be ignored.
+
+### Command plugins
+
+Any command radeau does not know is forwarded:
+
+| You type | Radeau runs |
+|---|---|
+| `radeau <name> <args>...` | `radeau-<name> <name> <args>...` |
+| `radeau help <name>` | `radeau-<name> <name> --help` |
+
+The plugin receives its own name as first argument (it should drop it before
+parsing) and a `RADEAU` environment variable holding the path of the running
+`radeau` binary, so it can call back into radeau instead of linking it. For
+example `$RADEAU metadata <path>` prints the package as JSON, so a plugin does
+not need to load the package itself.
+
+### Init importers
+
+`radeau init` has a second plugin level, for creating a package from an existing
+ontology in some other format:
+
+| You type | Radeau runs |
+|---|---|
+| `radeau init <format> <args>...` | `radeau-init-<format> <format> <args>...` |
+| `radeau help init <format>` | `radeau-init-<format> <format> --help` |
+
+Each importer defines its own arguments (input files, target directory, ...);
+`radeau init <format> --help` shows them. Supporting a new input format means
+writing a new `radeau-init-<format>` executable; radeau itself does not change.
+
+If an importer named `<format>` is installed, `radeau init <format>` runs it
+even when a directory of that name exists. Write `radeau init ./<format>` to
+initialize that directory instead.
+
+Importers are not listed as top-level plugins; `radeau --help` shows them in
+their own `Init importers:` section.
+
+### Interactive mode and plugins
+
+In a terminal, an incomplete command opens the interactive prompt:
+
+- `radeau` alone shows a menu of built-in commands followed by the installed
+  command plugins. Picking a plugin runs it with no arguments.
+- `radeau init` without `--name` first asks how to initialize: plain `init`, or
+  one of the installed importers. Picking an importer runs it with no
+  arguments.
+
+From there, a plugin built with `radeau_plugin::run` (below) asks for its own
+missing arguments in the same style.
+
+### Shell completions
+
+`radeau completions <shell>` includes installed plugins: command plugins as
+top-level commands, importers as subcommands of `init`. Plugins that answer
+the completion protocol (below) get full flag completion, others complete by
+name only. The generated script is a snapshot: run `radeau completions` again
+after installing or removing a plugin.
+
+### Writing a plugin
+
+Any executable named `radeau-<name>` works. For a Rust plugin, the
+[`radeau-plugin`](../radeau-plugin) crate does the protocol work in one call:
+
+```rust
+use clap::Parser;
+use std::process::ExitCode;
+
+/// One-line description, shown in `radeau --help`
+#[derive(Parser)]
+#[command(name = "radeau-hello", version, about)]
+struct Cli {
+    /// Path to package root
+    #[arg(default_value = ".")]
+    path: std::path::PathBuf,
+}
+
+fn main() -> ExitCode {
+    radeau_plugin::run("hello", |cli: Cli| -> Result<(), std::io::Error> {
+        println!("hello from {}", cli.path.display());
+        Ok(())
+    })
+}
+```
+
+`radeau_plugin::run(echo, body)`:
+
+1. drops the `echo` argument radeau prepends (pass `<name>` for a command
+   plugin, `<format>` for an init importer); running the binary directly
+   still works;
+2. answers `--radeau-completion-spec`, radeau's request for the plugin's flags as
+   JSON, used by `radeau completions`;
+3. in a terminal, prompts for missing required arguments, then offers the
+   optional ones;
+4. parses the arguments and calls `body`;
+5. on error, prints it with its cause chain and exits with status 1.
+
+`body` may return any error type that converts to `Box<dyn Error>`, a
+`String` included.
+
+The first non-empty line of `radeau-<name> <name> --help` (clap's `about`) is
+the description radeau shows in `radeau --help` and in the interactive menu.
 
 ## Lint Rule Categories
 
-Raft's linter includes rules in the following categories:
+Radeau's linter includes rules in the following categories:
 
-- **naming**: Naming conventions (PascalCase, snake_case, etc.)
+- **naming**: Naming conventions (PascalCase, camelCase, etc.)
 - **ordering**: Declaration and member ordering
 - **unused**: Unused elements (prefixes, variables)
 - **semantic**: Semantic correctness (unresolved types, circular inheritance)
 - **style**: Code formatting style (trailing whitespace, blank lines)
 - **package**: Package-level checks (missing version)
 
-Run `raft check --list-rules` to see all available rules.
+Run `radeau check --list-rules` to see all available rules.
 
 ## Configuration
 

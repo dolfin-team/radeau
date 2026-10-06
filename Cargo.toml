@@ -1,6 +1,6 @@
 [package]
-name = "raft"
-version = "0.1.7"
+name = "radeau"
+version = "0.1.10"
 edition = "2024"
 license = "MIT"
 keywords = ["semantic-web", "ontology", "dolfin", "knowledge-graph", "language"]
@@ -10,17 +10,17 @@ homepage = "https://www.dolfin.fr"
 repository = "https://github.com/dolfin-team/raft"
 
 [[bin]]
-name = "raft"
+name = "radeau"
 path = "src/main.rs"
 
 [dependencies]
-rowl = { version = "0.1.6", features = ["fs"] }
-dolfin-lint = "0.1.6"
-dolfin-diagnostic = "0.1.3"
-irukame = { path = "../irukame" }
-mekarui = { path = "../mekarui" }
+rowl = { version = "0.1.10", features = ["fs"] }
+dolfin-lint = "0.1.10"
+dolfin-diagnostic = "0.1.9"
+irukame = "0.1.10"
 clap = { version = "4.5.59", features = ["derive", "cargo"]}
 clap_complete = "4.5.66"
+radeau-plugin = "0.1.10"
 thiserror = "2.0.18"
 cliclack = "0.5"
 serde_json = "1"

@@ -137,9 +137,10 @@ fn find_dolfin_files(dir: &PathBuf) -> Result<Vec<PathBuf>, CliError> {
             if path.is_dir() {
                 visit_dir(&path, files)?;
             } else if let Some(ext) = path.extension()
-                && (ext == "dolfin" || ext == "dlf") {
-                    files.push(path);
-                }
+                && (ext == "dolfin" || ext == "dlf")
+            {
+                files.push(path);
+            }
         }
         Ok(())
     }

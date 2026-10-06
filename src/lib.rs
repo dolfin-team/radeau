@@ -8,7 +8,7 @@ pub mod plugin;
 use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
-/// Output format for `raft build --emit`.
+/// Output format for `radeau build --emit`.
 #[derive(ValueEnum, Debug, Clone, Default)]
 pub enum EmitFormat {
     /// Turtle/OWL (default)
@@ -41,7 +41,7 @@ fn get_available_categories() -> Vec<&'static str> {
 
 /// Dolfin - Ontology definition language toolchain
 #[derive(Parser, Debug)]
-#[command(name = "raft")]
+#[command(name = "radeau")]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
@@ -51,11 +51,15 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum Command {
     /// Initialize a new Dolfin package
+    #[command(
+        after_help = "Import an existing ontology instead with `radeau init <format> <FILE>...`,\n\
+        served by an external radeau-init-<format> importer (e.g. `radeau init turtle a.ttl`).\n\
+        Installed importers are listed by `radeau --help`."
+    )]
     Init {
-        /// Package namespace (e.g., <http://example.com>).
-        /// Optional when --with-turtle is given (derived from the RDF).
+        /// Package namespace (e.g., <http://example.com>)
         #[arg(short, long)]
-        name: Option<String>,
+        name: String,
 
         /// Directory to initialize (default: current directory)
         #[arg(default_value = ".")]
@@ -68,11 +72,6 @@ pub enum Command {
         /// Package authors
         #[arg(short, long("author"))]
         author: Option<Vec<String>>,
-
-        /// Seed the package from one or more RDF/Turtle files, reversed to
-        /// Dolfin via mekarui (repeatable / comma-separated).
-        #[arg(long = "with-turtle", value_name = "FILE", value_delimiter = ',')]
-        with_turtle: Vec<PathBuf>,
     },
 
     /// Check a package for errors
@@ -199,7 +198,7 @@ pub enum Command {
     },
 
     /// Print package metadata as JSON (namespace, files, concepts,
-    /// properties). Intended for plugins to consume via `$RAFT metadata`
+    /// properties). Intended for plugins to consume via `$RADEAU metadata`
     /// instead of re-implementing package loading.
     Metadata {
         /// Path to package root (default: current directory)
@@ -207,7 +206,7 @@ pub enum Command {
         path: PathBuf,
     },
 
-    /// Generate shell completions for the raft CLI
+    /// Generate shell completions for the radeau CLI
     Completions {
         /// The shell to generate completions for
         /// Supported shells: bash, zsh, fish, elvish, powershell
@@ -367,8 +366,7 @@ pub fn run(cli: Cli) -> Result<(), CliError> {
             path,
             description,
             author,
-            with_turtle,
-        } => commands::init::run(name, path, description, author, with_turtle),
+        } => commands::init::run(name, path, description, author),
 
         Command::Check {
             path,

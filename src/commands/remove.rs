@@ -102,13 +102,11 @@ impl UsageCheckResult {
 }
 
 /// Options for the remove command.
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct RemoveOptions {
     pub force: bool,
     pub dry_run: bool,
 }
-
 
 /// Run the remove command.
 pub fn run(
@@ -289,35 +287,38 @@ fn find_usage_in_line(line: &str, name: &str, decl_kind: DeclKind) -> Option<Usa
 
     // Check for sub declarations: "sub Parent" or "sub Parent, Other"
     if let Some(types_part) = line.strip_prefix("sub ")
-        && contains_identifier(types_part, name) {
-            return Some(UsageKind::SubDeclaration);
-        }
+        && contains_identifier(types_part, name)
+    {
+        return Some(UsageKind::SubDeclaration);
+    }
 
     // Check for has declarations: "has prop: Type" or "has prop: optional Type"
     if line.starts_with("has ")
-        && let Some(colon_pos) = line.find(':') {
-            let type_part = &line[colon_pos + 1..];
-            if contains_identifier(type_part, name) {
-                return Some(UsageKind::HasType);
-            }
+        && let Some(colon_pos) = line.find(':')
+    {
+        let type_part = &line[colon_pos + 1..];
+        if contains_identifier(type_part, name) {
+            return Some(UsageKind::HasType);
         }
+    }
 
     // Check for property declarations: "property name: Domain -> Range"
     if line.starts_with("property ")
-        && let Some(colon_pos) = line.find(':') {
-            let rest = &line[colon_pos + 1..];
-            if let Some(arrow_pos) = rest.find("->") {
-                let domain_part = &rest[..arrow_pos];
-                let range_part = &rest[arrow_pos + 2..];
+        && let Some(colon_pos) = line.find(':')
+    {
+        let rest = &line[colon_pos + 1..];
+        if let Some(arrow_pos) = rest.find("->") {
+            let domain_part = &rest[..arrow_pos];
+            let range_part = &rest[arrow_pos + 2..];
 
-                if contains_identifier(domain_part, name) {
-                    return Some(UsageKind::PropertyDomain);
-                }
-                if contains_identifier(range_part, name) {
-                    return Some(UsageKind::PropertyRange);
-                }
+            if contains_identifier(domain_part, name) {
+                return Some(UsageKind::PropertyDomain);
+            }
+            if contains_identifier(range_part, name) {
+                return Some(UsageKind::PropertyRange);
             }
         }
+    }
 
     // Check for rule patterns: "?x is Type" or "?x has prop ?y"
     if line.contains(" is ") && contains_identifier(line, name) {
@@ -414,16 +415,15 @@ fn remove_declaration_from_content(content: &str, name: &str, kind: DeclKind) ->
         let current_indent = line.len() - line.trim_start().len();
 
         // If we're skipping an indented block
-        if skip_until_dedent
-            && let Some(decl_indent) = declaration_indent {
-                // Continue skipping if line is more indented or empty
-                if line.trim().is_empty() || current_indent > decl_indent {
-                    continue;
-                }
-                // We've dedented, stop skipping
-                skip_until_dedent = false;
-                declaration_indent = None;
+        if skip_until_dedent && let Some(decl_indent) = declaration_indent {
+            // Continue skipping if line is more indented or empty
+            if line.trim().is_empty() || current_indent > decl_indent {
+                continue;
             }
+            // We've dedented, stop skipping
+            skip_until_dedent = false;
+            declaration_indent = None;
+        }
 
         // Check if this is the declaration to remove
         if is_definition(trimmed, name, kind) {
