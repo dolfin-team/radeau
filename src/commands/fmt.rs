@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::CliError;
 
@@ -126,7 +126,7 @@ pub fn run(
     Ok(())
 }
 
-fn find_dolfin_files(dir: &PathBuf) -> Result<Vec<PathBuf>, CliError> {
+fn find_dolfin_files(dir: &Path) -> Result<Vec<PathBuf>, CliError> {
     let mut files = Vec::new();
 
     fn visit_dir(dir: &std::path::Path, files: &mut Vec<PathBuf>) -> Result<(), CliError> {

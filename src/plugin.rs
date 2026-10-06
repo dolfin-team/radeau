@@ -49,11 +49,10 @@ fn is_executable(path: &Path) -> bool {
 /// Directories to search, in priority order: next to radeau's own exe, then `$PATH`.
 fn search_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(dir) = exe.parent() {
             dirs.push(dir.to_path_buf());
         }
-    }
     if let Some(path_var) = std::env::var_os("PATH") {
         dirs.extend(std::env::split_paths(&path_var));
     }

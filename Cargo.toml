@@ -16,6 +16,7 @@ path = "src/main.rs"
 [dependencies]
 rowl = { version = "0.1.10", features = ["fs"] }
 dolfin-lint = "0.1.10"
+dolfin-analysis = "0.1.10"
 dolfin-diagnostic = "0.1.9"
 irukame = "0.1.10"
 clap = { version = "4.5.59", features = ["derive", "cargo"]}

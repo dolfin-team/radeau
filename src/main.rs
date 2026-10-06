@@ -11,33 +11,28 @@ fn main() -> ExitCode {
     // `radeau init <format> <rest>` / `radeau help init <format>`: forward to the
     // `radeau-init-<format>` importer if one is installed. Otherwise the word
     // falls through to clap as init's PATH positional.
-    if args.len() >= 3 && args[1] == "init" && !args[2].starts_with('-') {
-        if let Some(code) = plugin::dispatch_init(&args[2], &args[3..]) {
+    if args.len() >= 3 && args[1] == "init" && !args[2].starts_with('-')
+        && let Some(code) = plugin::dispatch_init(&args[2], &args[3..]) {
             return code;
         }
-    }
-    if args.len() >= 4 && args[1] == "help" && args[2] == "init" {
-        if let Some(code) = plugin::dispatch_init(&args[3], &["--help".to_string()]) {
+    if args.len() >= 4 && args[1] == "help" && args[2] == "init"
+        && let Some(code) = plugin::dispatch_init(&args[3], &["--help".to_string()]) {
             return code;
         }
-    }
 
     // `radeau help ${command}` for a command radeau doesn't know about:
     // forward to `radeau-${command} ${command} --help`.
     if args.len() >= 3 && args[1] == "help" && !plugin::STATIC_COMMANDS.contains(&args[2].as_str())
-    {
-        if let Some(code) = plugin::dispatch_help(&args[2]) {
+        && let Some(code) = plugin::dispatch_help(&args[2]) {
             return code;
         }
-    }
 
     // `radeau ${command}` for a command radeau doesn't know about: forward to
     // `radeau-${command} ${command} <rest>`, cargo-external-subcommand style.
-    if args.len() >= 2 && !plugin::STATIC_COMMANDS.contains(&args[1].as_str()) {
-        if let Some(code) = plugin::dispatch(&args[1], &args[2..]) {
+    if args.len() >= 2 && !plugin::STATIC_COMMANDS.contains(&args[1].as_str())
+        && let Some(code) = plugin::dispatch(&args[1], &args[2..]) {
             return code;
         }
-    }
 
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,

@@ -19,11 +19,16 @@ impl DeclKind {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+}
+
+impl std::str::FromStr for DeclKind {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, ()> {
         match s {
-            "concept" => Some(DeclKind::Concept),
-            "property" => Some(DeclKind::Property),
-            _ => None,
+            "concept" => Ok(DeclKind::Concept),
+            "property" => Ok(DeclKind::Property),
+            _ => Err(()),
         }
     }
 }
